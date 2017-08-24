@@ -19,7 +19,7 @@ class DNB:
         t = time.process_time()
         self._dynamic_mle(df[state_col])
         for st in self.states_list:
-            self._features_mle(df, st)
+            self._features_mle(df[df[state_col]==st].drop([state_col],axis=1),st)
         if self.debug:
             elapsed_time = time.process_time() - t
             print("MLE finished in %d seconds." % elapsed_time)
@@ -40,4 +40,7 @@ class DNB:
             self.A[i] = self.A[i] / self.A[i].sum()
 
     def _features_mle(self, df, state):
+        """simplified_version"""
+
+
         pass

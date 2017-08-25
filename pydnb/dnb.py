@@ -9,7 +9,7 @@ class DNB:
     """
 
     def __init__(self, debug=False):
-        self.state_prior = None
+        self.states_prior = None
         self.states_list = None
         self.A = None
         self.B = None
@@ -17,7 +17,10 @@ class DNB:
 
     def mle(self, df, state_col, features=None):
         t = time.process_time()
+        """ Fitting dynamics in the DNB """
         self._dynamic_mle(df[state_col])
+        """ Fitting observable variables """
+        self.B = {}
         for st in self.states_list:
             self._features_mle(df[df[state_col]==st].drop([state_col],axis=1),st)
         if self.debug:
@@ -41,6 +44,13 @@ class DNB:
 
     def _features_mle(self, df, state):
         """simplified_version"""
-
-
-        pass
+        import scipy.stats as st
+        features = list(df.columns.values)
+        for f in features:
+            params = st.norm.fit(df[f])
+            arg = params[:-2]
+            loc = params[-2]
+            scale = params[-1]
+            if self.debug:
+                print("%s, %s, %s"%(str(arg),str(loc),str(scale)))
+            self.B[(state, f)] = params

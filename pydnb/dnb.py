@@ -54,19 +54,19 @@ class DNB:
             scale = params[-1]
             if self.debug:
                 print("%s, %s, %s"%(str(arg),str(loc),str(scale)))
-            self.B[(state, f)] = [st.norm] + params
+            self.B[(state, f)] = [st.norm] + list(params)
 
-    def _emission_prob(self,state,data):
+    def emission_prob(self,state,data):
         prob = 1
         for f in self.features_list:
             dist = self.B[(state,f)][0]
             arg = self.B[(state,f)][1:-2]
             loc = self.B[(state,f)][-2]
             scale = self.B[(state,f)][-1]
-            prob *= dist.pdf(data.iloc[0][f], loc=loc, scale=scale, *arg)
+            prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob
 
-    def _transition_prob(self,state1, state2):
+    def transition_prob(self,state1, state2):
         return self.A[np.searchsorted(self.states_list, state1), np.searchsorted(self.states_list, state2)]
 
     def viterbi(self, data):

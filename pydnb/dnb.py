@@ -69,6 +69,12 @@ class DNB:
     def transition_prob(self,state1, state2):
         return self.A[np.searchsorted(self.states_list, state1), np.searchsorted(self.states_list, state2)]
 
+    def _forward(self,data,k=None,state=None):
+        pass
+
+    def _backward(self,data,k=None,state=None):
+        pass
+
     def viterbi(self, data):
         pass
 

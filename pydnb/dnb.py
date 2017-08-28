@@ -60,32 +60,42 @@ class DNB:
                 print("Distribution: %s, args: %s, loc: %s, scale: %s" % (str(dist), str(arg), str(loc), str(scale)))
             self.B[(state, f)] = list(params)
 
-    def prior_prob(self, state):
-        return self.states_prior[self._state_index(state)]
+    def prior_prob(self, state, log=False):
+        if log:
+            return np.log(self.states_prior[self._state_index(state)])
+        else:
+            return self.states_prior[self._state_index(state)]
 
-    def emission_prob(self, state, data):
+    def emission_prob(self, state, data, log=False):
         prob = 1
+        if log:
+            prob = np.log(prob)
         for f, dist in self.features.items():
             arg = self.B[(state, f)][:-2]
             loc = self.B[(state, f)][-2]
             scale = self.B[(state, f)][-1]
-            prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
+            if log:
+                prob += np.log(dist.pdf(data[f], loc=loc, scale=scale, *arg))
+            else:
+                prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob
 
-    def transition_prob(self, state1, state2):
-        return self.A[self._state_index(state1), self._state_index(state2)]
+    def transition_prob(self, state1, state2, log=False):
+        if log:
+            return np.log(self.A[self._state_index(state1), self._state_index(state2)])
+        else:
+            return self.A[self._state_index(state1), self._state_index(state2)]
 
     def _forward(self, data, k=None, state=None):
         alpha = np.zeros((len(self.states_list), len(data)))
         """ alpha t=0 """
         for st in self.states_list:
-            alpha[self._state_index(st)] = self.prior_prob(st) * self.emission_prob(st, data.iloc[0])
-
+            alpha[self._state_index(st)] = self.prior_prob(st, log=True) + self.emission_prob(st, data.iloc[0], log=True)
         for t in range(1, len(data)):
             for st in self.states_list:
                 alpha[self._state_index(st)][t] = sum(
-                    alpha[self._state_index(_st)][t - 1] * self.transition_prob(_st, st) for _st in
-                    self.states_list) * self.emission_prob(st,data.iloc[t])
+                    alpha[self._state_index(_st)][t - 1] + self.transition_prob(_st, st,log=True) for _st in
+                    self.states_list) + self.emission_prob(st,data.iloc[t],log=True)
         if state:
             alpha = alpha[self._state_index(state), :]
         if k:
@@ -93,11 +103,11 @@ class DNB:
         return alpha
 
     def _backward(self, data, k=None, state=None):
-        beta = np.zeros((len(self.states_list), len(data))) + 1
+        beta = np.zeros((len(self.states_list), len(data)))
         for t in range(len(data) - 1, 0, -1):
             for st in self.states_list:
                 beta[self._state_index(st)][t] = sum(
-                    self.transition_prob(st, _st) * self.emission_prob(_st, data.iloc[t + 1]) * beta[_st][t + 1] for _st
+                    self.transition_prob(st, _st,log=True) + self.emission_prob(_st, data.iloc[t + 1], log=True) + beta[_st][t + 1] for _st
                     in self.states_list)
         if state:
             beta = beta[self._state_index(state), :]

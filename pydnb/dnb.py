@@ -11,7 +11,7 @@ class DNB:
     def __init__(self, debug=False):
         self.states_prior = None
         self.states_list = None
-        self.features_list = None
+        self.features = None
         self.A = None
         self.B = None
         self.debug = debug
@@ -23,7 +23,7 @@ class DNB:
         """ Fitting observable variables """
         self.B = {}
         for st in self.states_list:
-            self._features_mle(df[df[state_col]==st].drop([state_col],axis=1),st)
+            self._features_mle(df[df[state_col] == st].drop([state_col], axis=1), st, features)
         if self.debug:
             elapsed_time = time.process_time() - t
             print("MLE finished in %d seconds." % elapsed_time)
@@ -43,26 +43,27 @@ class DNB:
         for i in range(states_nr):
             self.A[i] = self.A[i] / self.A[i].sum()
 
-    def _features_mle(self, df, state):
-        """simplified_version"""
+    def _features_mle(self, df, state, features):
         import scipy.stats as st
-        self.features_list = list(df.columns.values)
-        for f in self.features_list:
-            params = st.norm.fit(df[f])
+        if features is None:
+            self.features = dict.fromkeys(list(df.columns.values), st.norm)
+        else:
+            self.features = features
+        for f, dist in self.features.items():
+            params = dist.fit(df[f])
             arg = params[:-2]
             loc = params[-2]
             scale = params[-1]
             if self.debug:
-                print("%s, %s, %s"%(str(arg),str(loc),str(scale)))
-            self.B[(state, f)] = [st.norm] + list(params)
+                print("Distribution: %s, args: %s, loc: %s, scale: %s" % (str(dist), str(arg), str(loc), str(scale)))
+            self.B[(state, f)] = list(params)
 
     def emission_prob(self,state,data):
         prob = 1
-        for f in self.features_list:
-            dist = self.B[(state,f)][0]
-            arg = self.B[(state,f)][1:-2]
-            loc = self.B[(state,f)][-2]
-            scale = self.B[(state,f)][-1]
+        for f, dist in self.features.items():
+            arg = self.B[(state, f)][:-2]
+            loc = self.B[(state, f)][-2]
+            scale = self.B[(state, f)][-1]
             prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob
 

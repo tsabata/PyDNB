@@ -60,6 +60,9 @@ class DNB:
                 print("Distribution: %s, args: %s, loc: %s, scale: %s" % (str(dist), str(arg), str(loc), str(scale)))
             self.B[(state, f)] = list(params)
 
+    def prior_prob(self, state):
+        return self.states_prior[self._state_index(state)]
+
     def emission_prob(self, state, data):
         prob = 1
         for f, dist in self.features.items():

@@ -16,6 +16,9 @@ class DNB:
         self.B = None
         self.debug = debug
 
+    def _state_index(self, state):
+        return np.searchsorted(self.states_list, state)
+
     def mle(self, df, state_col, features=None):
         t = time.process_time()
         """ Fitting dynamics in the DNB """
@@ -36,9 +39,8 @@ class DNB:
         self.states_prior = np.zeros(states_nr)
         self.states_prior[np.searchsorted(self.states_list, states_vec[0])] += 1
         for i in range(1, len(states_vec)):
-            self.A[np.searchsorted(self.states_list, states_vec[i - 1]), np.searchsorted(self.states_list,
-                                                                                         states_vec[i])] += 1
-            self.states_prior[np.searchsorted(self.states_list, states_vec[i])] += 1
+            self.A[self._state_index(states_vec[i - 1]), self._state_index(states_vec[i])] += 1
+            self.states_prior[self._state_index(states_vec[i])] += 1
         self.states_prior = self.states_prior / self.states_prior.sum()
         for i in range(states_nr):
             self.A[i] = self.A[i] / self.A[i].sum()
@@ -68,7 +70,7 @@ class DNB:
         return prob
 
     def transition_prob(self, state1, state2):
-        return self.A[np.searchsorted(self.states_list, state1), np.searchsorted(self.states_list, state2)]
+        return self.A[self._state_index(state1), self._state_index(state2)]
 
     def _forward(self, data, k=None, state=None):
         pass

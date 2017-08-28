@@ -108,5 +108,8 @@ class DNB:
     def viterbi(self, data):
         pass
 
+    def obs_seq_probability(self,data):
+        return sum(self._forward(data, k=len(data)))
+
     def seq_probability(self, data, path):
         pass

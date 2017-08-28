@@ -76,7 +76,21 @@ class DNB:
         return self.A[self._state_index(state1), self._state_index(state2)]
 
     def _forward(self, data, k=None, state=None):
-        pass
+        alpha = np.zeros((len(self.states_list), len(data)))
+        """ alpha t=0 """
+        for st in self.states_list:
+            alpha[self._state_index(st)] = self.prior_prob(st) * self.emission_prob(st, data.iloc[0])
+
+        for t in range(1, len(data)):
+            for st in self.states_list:
+                alpha[self._state_index(st)][t] = sum(
+                    alpha[self._state_index(_st)][t - 1] * self.transition_prob(_st, st) for _st in
+                    self.states_list) * self.emission_prob(st,data.iloc[t])
+        if state:
+            alpha = alpha[self._state_index(state), :]
+        if k:
+            alpha = alpha[:, k]
+        return alpha
 
     def _backward(self, data, k=None, state=None):
         pass

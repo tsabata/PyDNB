@@ -139,4 +139,10 @@ class DNB:
         return sum(self._forward(data, k=len(data)))
 
     def seq_probability(self, data, path):
-        pass
+        prob = 0
+        prob += self.prior_prob(path[0],log=True) + self.emission_prob(path[0],data.iloc[0],log=True)
+        for t in range(1,len(data)):
+            prob += self.transition_prob(path[t-1], path[t],log=True)
+            prob += self.emission_prob(path[t],data.iloc[t],log=True)
+        return prob
+

@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+import pandas as pd
 
 
 class DNB:
@@ -114,6 +115,22 @@ class DNB:
         if k:
             beta = beta[:, k]
         return beta
+
+    def sample(self, size):
+        Y, output = [],{}
+        state=np.random.choice(len(self.states_list), 1,  p=self.states_prior)[0]
+        for _ in range(size):
+            for f, dist in self.features.items():
+                arr = output.get(f,[])
+                arg = self.B[(state, f)][:-2]
+                loc = self.B[(state, f)][-2]
+                scale = self.B[(state, f)][-1]
+                arr.append(dist(loc=loc, scale=scale, *arg).rvs())
+                output[f]=arr
+            Y.append(state)
+            state=np.random.choice(len(self.states_list), 1,  p=self.A[state])[0]
+        df = pd.DataFrame({**{'state':Y}, **output})
+        return df
 
     def viterbi(self, data):
         pass

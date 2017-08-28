@@ -58,7 +58,7 @@ class DNB:
                 print("Distribution: %s, args: %s, loc: %s, scale: %s" % (str(dist), str(arg), str(loc), str(scale)))
             self.B[(state, f)] = list(params)
 
-    def emission_prob(self,state,data):
+    def emission_prob(self, state, data):
         prob = 1
         for f, dist in self.features.items():
             arg = self.B[(state, f)][:-2]
@@ -67,13 +67,13 @@ class DNB:
             prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob
 
-    def transition_prob(self,state1, state2):
+    def transition_prob(self, state1, state2):
         return self.A[np.searchsorted(self.states_list, state1), np.searchsorted(self.states_list, state2)]
 
-    def _forward(self,data,k=None,state=None):
+    def _forward(self, data, k=None, state=None):
         pass
 
-    def _backward(self,data,k=None,state=None):
+    def _backward(self, data, k=None, state=None):
         pass
 
     def viterbi(self, data):

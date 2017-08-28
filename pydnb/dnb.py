@@ -93,7 +93,17 @@ class DNB:
         return alpha
 
     def _backward(self, data, k=None, state=None):
-        pass
+        beta = np.zeros((len(self.states_list), len(data))) + 1
+        for t in range(len(data) - 1, 0, -1):
+            for st in self.states_list:
+                beta[self._state_index(st)][t] = sum(
+                    self.transition_prob(st, _st) * self.emission_prob(_st, data.iloc[t + 1]) * beta[_st][t + 1] for _st
+                    in self.states_list)
+        if state:
+            beta = beta[self._state_index(state), :]
+        if k:
+            beta = beta[:, k]
+        return beta
 
     def viterbi(self, data):
         pass

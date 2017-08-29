@@ -20,10 +20,10 @@ class DNB:
     def _state_index(self, state):
         return np.searchsorted(self.states_list, state)
 
-    def mle(self, df, state_col, features=None):
+    def mle(self, df, state_col, features=None, avoid_zeros=False):
         t = time.process_time()
         """ Fitting dynamics in the DNB """
-        self._dynamic_mle(df[state_col])
+        self._dynamic_mle(df[state_col], avoid_zeros)
         """ Fitting observable variables """
         self.B = {}
         for st in self.states_list:
@@ -32,19 +32,25 @@ class DNB:
             elapsed_time = time.process_time() - t
             print("MLE finished in %d seconds." % elapsed_time)
 
-    def _dynamic_mle(self, df):
+    def _dynamic_mle(self, df,avoid_zeros):
         states_vec = df.as_matrix()
         self.states_list = np.unique(states_vec)
         states_nr = len(self.states_list)
         self.A = np.zeros((states_nr, states_nr))
+        if avoid_zeros:
+            self.A+=1
         self.states_prior = np.zeros(states_nr)
-        self.states_prior[np.searchsorted(self.states_list, states_vec[0])] += 1
+        self.states_prior[self._state_index(states_vec[0])] += 1
         for i in range(1, len(states_vec)):
             self.A[self._state_index(states_vec[i - 1]), self._state_index(states_vec[i])] += 1
             self.states_prior[self._state_index(states_vec[i])] += 1
         self.states_prior = self.states_prior / self.states_prior.sum()
         for i in range(states_nr):
             self.A[i] = self.A[i] / self.A[i].sum()
+        # if avoid_zeros:
+        #     self.A+=1/100000000
+        #     for i in range(len(self.A)):
+        #         self.A[i]/=sum(self.A[i])
 
     def _features_mle(self, df, state, features):
         import scipy.stats as st
@@ -76,7 +82,7 @@ class DNB:
             loc = self.B[(state, f)][-2]
             scale = self.B[(state, f)][-1]
             if log:
-                prob += np.log(dist.pdf(data[f], loc=loc, scale=scale, *arg))
+                prob += np.log(dist.pdf(data[f], loc=loc, scale=scale, *arg)+0.00000000001)
             else:
                 prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob
@@ -116,33 +122,42 @@ class DNB:
             beta = beta[:, k]
         return beta
 
-    def sample(self, size):
-        Y, output = [],{}
-        state=np.random.choice(len(self.states_list), 1,  p=self.states_prior)[0]
-        for _ in range(size):
-            for f, dist in self.features.items():
-                arr = output.get(f,[])
-                arg = self.B[(state, f)][:-2]
-                loc = self.B[(state, f)][-2]
-                scale = self.B[(state, f)][-1]
-                arr.append(dist(loc=loc, scale=scale, *arg).rvs())
-                output[f]=arr
-            Y.append(state)
-            state=np.random.choice(len(self.states_list), 1,  p=self.A[state])[0]
-        df = pd.DataFrame({**{'state':Y}, **output})
-        return df
-
-    def viterbi(self, data):
-        pass
+    def sample(self, size, n=1):
+        sequences = []
+        for i in range(n):
+            Y, output = [], {}
+            state = self.states_list[np.random.choice(len(self.states_list), 1, p=self.states_prior)[0]]
+            for _ in range(size):
+                for f, dist in self.features.items():
+                    arr = output.get(f,[])
+                    arg = self.B[(state, f)][:-2]
+                    loc = self.B[(state, f)][-2]
+                    scale = self.B[(state, f)][-1]
+                    arr.append(dist(loc=loc, scale=scale, *arg).rvs())
+                    output[f]=arr
+                Y.append(state)
+                state=self.states_list[np.random.choice(len(self.states_list), 1,  p=self.A[self._state_index(state)])[0]]
+            df = pd.DataFrame({**{'state':Y}, **output})
+            sequences.append(df)
+        return sequences
 
     def obs_seq_probability(self,data):
         return sum(self._forward(data, k=len(data)))
 
-    def seq_probability(self, data, path):
+    def seq_probability(self, data, path, log = True):
         prob = 0
-        prob += self.prior_prob(path[0],log=True) + self.emission_prob(path[0],data.iloc[0],log=True)
+        prob += self.prior_prob(path[0],log=True)
+        prob += self.emission_prob(path[0], data.iloc[0], log=True)
         for t in range(1,len(data)):
             prob += self.transition_prob(path[t-1], path[t],log=True)
+            if np.isnan(prob):
+                print('err2')
             prob += self.emission_prob(path[t],data.iloc[t],log=True)
+            if np.isnan(prob):
+                print('err3')
+        if not log:
+            return np.exp(prob)
         return prob
 
+    def viterbi(self, data):
+        pass

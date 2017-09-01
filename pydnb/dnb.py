@@ -20,7 +20,7 @@ class DNB:
     def _state_index(self, state):
         return np.searchsorted(self.states_list, state)
 
-    def mle(self, df, state_col, features=None, avoid_zeros=False):
+    def mle(self, df, state_col, features=None, avoid_zeros=False, fix_scales=False):
         t = time.process_time()
         """ Fitting dynamics in the DNB """
         self._dynamic_mle(df[state_col], avoid_zeros)
@@ -28,9 +28,12 @@ class DNB:
         self.B = {}
         for st in self.states_list:
             self._features_mle(df[df[state_col] == st].drop([state_col], axis=1), st, features)
+        if fix_scales:
+            self.fix_zero_scale()
         if self.debug:
             elapsed_time = time.process_time() - t
             print("MLE finished in %d seconds." % elapsed_time)
+        return self
 
     def _dynamic_mle(self, df,avoid_zeros):
         states_vec = df.as_matrix()

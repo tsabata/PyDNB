@@ -105,12 +105,13 @@ class DNB:
         alpha = np.zeros((len(self.states_list), len(data)))
         """ alpha t=0 """
         for st in self.states_list:
-            alpha[self._state_index(st)] = self.prior_prob(st, log=True) + self.emission_prob(st, data.iloc[0], log=True)
+            alpha[self._state_index(st)] = self.prior_prob(st, log=True) + self.emission_prob(st, data.iloc[0],
+                                                                                              log=True)
         for t in range(1, len(data)):
             for st in self.states_list:
                 alpha[self._state_index(st)][t] = sum(
-                    alpha[self._state_index(_st)][t - 1] + self.transition_prob(_st, st,log=True) for _st in
-                    self.states_list) + self.emission_prob(st,data.iloc[t],log=True)
+                    alpha[self._state_index(_st)][t - 1] + self.transition_prob(_st, st, log=True) for _st in
+                    self.states_list) + self.emission_prob(st, data.iloc[t], log=True)
         if state:
             alpha = alpha[self._state_index(state), :]
         if k:
@@ -122,7 +123,8 @@ class DNB:
         for t in range(len(data) - 1, 0, -1):
             for st in self.states_list:
                 beta[self._state_index(st)][t] = sum(
-                    self.transition_prob(st, _st,log=True) + self.emission_prob(_st, data.iloc[t + 1], log=True) + beta[_st][t + 1] for _st
+                    self.transition_prob(st, _st, log=True) + self.emission_prob(_st, data.iloc[t + 1], log=True) +
+                    beta[_st][t + 1] for _st
                     in self.states_list)
         if state:
             beta = beta[self._state_index(state), :]
@@ -137,22 +139,23 @@ class DNB:
             state = self.states_list[np.random.choice(len(self.states_list), 1, p=self.states_prior)[0]]
             for _ in range(size):
                 for f, dist in self.features.items():
-                    arr = output.get(f,[])
+                    arr = output.get(f, [])
                     arg = self.B[(state, f)][:-2]
                     loc = self.B[(state, f)][-2]
                     scale = self.B[(state, f)][-1]
                     arr.append(dist(loc=loc, scale=scale, *arg).rvs())
-                    output[f]=arr
+                    output[f] = arr
                 Y.append(state)
-                state=self.states_list[np.random.choice(len(self.states_list), 1,  p=self.A[self._state_index(state)])[0]]
-            df = pd.DataFrame({**{'state':Y}, **output})
+                state = self.states_list[
+                    np.random.choice(len(self.states_list), 1, p=self.A[self._state_index(state)])[0]]
+            df = pd.DataFrame({**{'state': Y}, **output})
             sequences.append(df)
         return sequences
 
     def obs_seq_probability(self, data):
         return sum(self._forward(data, k=len(data)-1))
 
-    def seq_probability(self, data, path, log = True):
+    def seq_probability(self, data, path, log=True):
         prob = 0
         path = list(path)
         prob += self.prior_prob(path[0], log=True)

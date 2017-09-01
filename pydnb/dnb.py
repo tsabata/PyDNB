@@ -67,6 +67,15 @@ class DNB:
                 print("Distribution: %s, args: %s, loc: %s, scale: %s" % (str(dist), str(arg), str(loc), str(scale)))
             self.B[(state, f)] = list(params)
 
+    def fix_zero_scale(self, new_scale=1, tolerance=0.000001):
+        for state in self.states_list:
+            for f, dist in self.features.items():
+                scale = self.B[(state, f)][-1]
+                if scale < tolerance:
+                    if self.debug:
+                        print("state: %s,feature: %s" % (str(state), str(f)))
+                    self.B[(state, f)][-1] = new_scale
+
     def prior_prob(self, state, log=False):
         if log:
             return np.log(self.states_prior[self._state_index(state)])

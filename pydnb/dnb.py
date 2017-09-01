@@ -35,13 +35,13 @@ class DNB:
             print("MLE finished in %d seconds." % elapsed_time)
         return self
 
-    def _dynamic_mle(self, df,avoid_zeros):
+    def _dynamic_mle(self, df, avoid_zeros):
         states_vec = df.as_matrix()
         self.states_list = np.unique(states_vec)
         states_nr = len(self.states_list)
         self.A = np.zeros((states_nr, states_nr))
         if avoid_zeros:
-            self.A+=1
+            self.A += 1
         self.states_prior = np.zeros(states_nr)
         self.states_prior[self._state_index(states_vec[0])] += 1
         for i in range(1, len(states_vec)):
@@ -50,10 +50,6 @@ class DNB:
         self.states_prior = self.states_prior / self.states_prior.sum()
         for i in range(states_nr):
             self.A[i] = self.A[i] / self.A[i].sum()
-        # if avoid_zeros:
-        #     self.A+=1/100000000
-        #     for i in range(len(self.A)):
-        #         self.A[i]/=sum(self.A[i])
 
     def _features_mle(self, df, state, features):
         import scipy.stats as st
@@ -94,7 +90,7 @@ class DNB:
             loc = self.B[(state, f)][-2]
             scale = self.B[(state, f)][-1]
             if log:
-                prob += np.log(dist.pdf(data[f], loc=loc, scale=scale, *arg)+0.00000000001)
+                prob += dist.logpdf(data[f], loc=loc, scale=scale, *arg)
             else:
                 prob *= dist.pdf(data[f], loc=loc, scale=scale, *arg)
         return prob

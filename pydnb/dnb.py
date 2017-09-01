@@ -153,7 +153,7 @@ class DNB:
         return sequences
 
     def obs_seq_probability(self, data):
-        return sum(self._forward(data, k=len(data)-1))
+        return sum(self._forward(data, k=len(data) - 1))
 
     def seq_probability(self, data, path, log=True):
         prob = 0

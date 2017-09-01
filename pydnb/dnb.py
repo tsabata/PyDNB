@@ -149,20 +149,17 @@ class DNB:
             sequences.append(df)
         return sequences
 
-    def obs_seq_probability(self,data):
-        return sum(self._forward(data, k=len(data)))
+    def obs_seq_probability(self, data):
+        return sum(self._forward(data, k=len(data)-1))
 
     def seq_probability(self, data, path, log = True):
         prob = 0
-        prob += self.prior_prob(path[0],log=True)
+        path = list(path)
+        prob += self.prior_prob(path[0], log=True)
         prob += self.emission_prob(path[0], data.iloc[0], log=True)
-        for t in range(1,len(data)):
-            prob += self.transition_prob(path[t-1], path[t],log=True)
-            if np.isnan(prob):
-                print('err2')
-            prob += self.emission_prob(path[t],data.iloc[t],log=True)
-            if np.isnan(prob):
-                print('err3')
+        for t in range(1, len(data)):
+            prob += self.transition_prob(path[t - 1], path[t], log=True)
+            prob += self.emission_prob(path[t], data.iloc[t], log=True)
         if not log:
             return np.exp(prob)
         return prob

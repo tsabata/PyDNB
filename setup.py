@@ -1,45 +1,36 @@
-from setuptools import setup, find_packages  # Always prefer setuptools over distutils
 from codecs import open  # To use a consistent encoding
-from os import path
-import pydnb
+import setuptools
+import os
+import re
 
-here = path.abspath(path.dirname(__file__))
-
-# Get the long description from the relevant file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open("README.md", "r", encoding='utf-8') as f:
     long_description = f.read()
 
-setup(
+
+with open('pydnb/VERSION') as f:
+    version_content = [line for line in f.readlines() if re.search(r'([\d.]+)',line)]
+
+if len(version_content) != 1:
+    raise RuntimeError('Invalid format of VERSION file.')
+
+
+setuptools.setup(
     name='pydnb',
-
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # http://packaging.python.org/en/latest/tutorial.html#version
-    version=pydnb.__version__,
-
-    description='Implementation of dynamic naive Bayes (extension for hidden Markov model)',
-    long_description=long_description,
-
-    # The project's main homepage.
-    url='https://github.com/tsabata/PyDNB',
-
-    # Author details
+    version=version_content[0] + os.environ.get('PY_PKG_DEV_VERSION', ''),
     author='Tomas Sabata',
     author_email='sabata.tomas@mail.com',
-
-    # Choose your license
+    description="Implementation of dynamic naive Bayes classifier (extension of hidden Markov model)",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/tsabata/PyDNB",
     license='MIT',
-
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
-
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-    # packages=['my_package','my_package.my_subpackage1','my_package.my_subpackage2'],
-
-    # List run-time dependencies here.  These will be installed by pip when your
-    # project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/technical.html#install-requires-vs-requirements-files
-    install_requires=['numpy', 'scipy', 'pandas'],
+    packages=setuptools.find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    classifiers=(
+        "Programming Language :: Python :: 3",
+    ),
+    python_requires='>=3.4',
+    install_requires=['numpy',
+                      'scipy',
+                      'pandas'],
+    include_package_data=True,
 )
